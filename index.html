@@ -389,56 +389,111 @@ function exportar() {
   dados.forEach(function(r) {
     const kg = Number(r.liquido) || 0;
     totalGeral += kg;
-    totaisMaca[r.maca] = (totaisMaca[r.maca] || 0) + kg;
+    const maca = r.maca || "Sem tipo de maçã";
+    totaisMaca[maca] = (totaisMaca[maca] || 0) + kg;
   });
 
-  let csv = "\uFEFF";
-  csv += "BRANQUINHO & MESQUITA - REGISTO DE CARGAS\n\n";
-  csv += "CARGAS REGISTADAS\n";
-  csv += "Parcela;Data;Hora;Matrícula;Tipo de maçã;Tipo de palote;N.º palotes;Kg bruto;Tara camião;Tara palotes\n";
+  function esc(v) {
+    return String(v ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  let tabela = `
+    <table>
+      <thead>
+        <tr>
+          <th>Parcela</th>
+          <th>Data</th>
+          <th>Hora</th>
+          <th>Matrícula</th>
+          <th>Tipo de maçã</th>
+          <th>Tipo de palote</th>
+          <th>N.º palotes</th>
+          <th>Kg bruto</th>
+          <th>Tara camião</th>
+          <th>Tara palotes</th>
+          <th>Kg líquido maçã</th>
+        </tr>
+      </thead>
+      <tbody>`;
 
   dados.forEach(function(r) {
-    const linha = [
-      r.parcela,
-      r.data,
-      r.hora || "",
-      r.matricula,
-      r.maca,
-      r.tipoPalote,
-      r.palotes,
-      r.bruto,
-      r.taraCamiao ?? r.tara ?? 0,
-      r.taraTotalPalotes || 0
-    ];
-
-    csv += linha.map(function(x) {
-      return '"' + String(x).replace(/"/g, '""') + '"';
-    }).join(";") + "\n";
+    tabela += `<tr>
+      <td>${esc(r.parcela)}</td>
+      <td>${esc(r.data)}</td>
+      <td>${esc(r.hora || "")}</td>
+      <td>${esc(r.matricula)}</td>
+      <td>${esc(r.maca)}</td>
+      <td>${esc(r.tipoPalote)}</td>
+      <td>${esc(r.palotes)}</td>
+      <td>${esc(r.bruto)}</td>
+      <td>${esc(r.taraCamiao ?? r.tara ?? 0)}</td>
+      <td>${esc(r.taraTotalPalotes || 0)}</td>
+      <td>${esc(r.liquido)}</td>
+    </tr>`;
   });
 
-  csv += "\n\n";
-  csv += "TOTAL KG LÍQUIDOS POR TIPO DE MAÇÃ\n";
-  csv += "Tipo de maçã;Kg líquidos\n";
+  tabela += `</tbody></table>`;
 
-  Object.keys(totaisMaca).sort().forEach(function(maca) {
-    csv += '"' + maca.replace(/"/g, '""') + '";' +
-      totaisMaca[maca].toLocaleString("pt-PT", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      }) + " kg\n";
-  });
+  let resumo = `
+    <section class="resumo">
+      <h2>Totais de kg líquidos por tipo de maçã</h2>`;
 
-  csv += "\nTOTAL GERAL KG LÍQUIDOS DE MAÇÃ;" +
-    totalGeral.toLocaleString("pt-PT", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }) + " kg\n";
+  Object.keys(totaisMaca)
+    .filter(function(maca) { return (totaisMaca[maca] || 0) > 0; })
+    .sort()
+    .forEach(function(maca) {
+      resumo += `<p><strong>${esc(maca)}</strong> — ${
+        totaisMaca[maca].toLocaleString("pt-PT", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        })
+      } kg</p>`;
+    });
 
-  const blob = new Blob([csv], {type: "text/csv;charset=utf-8"});
+  resumo += `
+      <div class="total-geral">
+        <strong>TOTAL GERAL KG LÍQUIDOS DE MAÇÃ</strong><br>
+        <span>${totalGeral.toLocaleString("pt-PT", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        })} kg</span>
+      </div>
+    </section>`;
+
+  const documento = `<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<title>Registo de Cargas - Branquinho & Mesquita</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 18px; color: #111; }
+  h1 { font-size: 20px; margin-bottom: 18px; }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  th, td { border: 1px solid #999; padding: 6px 7px; text-align: left; white-space: nowrap; }
+  th { font-weight: 700; background: #f2f2f2; }
+  .resumo { margin-top: 28px; page-break-inside: avoid; }
+  .resumo h2 { font-size: 17px; margin-bottom: 12px; }
+  .resumo p { margin: 7px 0; font-size: 14px; }
+  .total-geral { margin-top: 20px; padding-top: 12px; border-top: 2px solid #111; font-size: 16px; }
+  .total-geral span { font-size: 18px; }
+</style>
+</head>
+<body>
+<h1>BRANQUINHO &amp; MESQUITA - REGISTO DE CARGAS</h1>
+${tabela}
+${resumo}
+</body>
+</html>`;
+
+  const blob = new Blob([documento], {type: "text/html;charset=utf-8"});
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "registo_cargas_branquinho_mesquita.csv";
+  a.download = "registo_cargas_branquinho_mesquita.html";
   document.body.appendChild(a);
   a.click();
   a.remove();

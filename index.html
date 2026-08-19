@@ -383,15 +383,11 @@ function exportar() {
     return;
   }
 
-  let totalKg = 0;
-  let csv = "\uFEFF";
-  csv += "REGISTO DE CARGAS - BRANQUINHO & MESQUITA\\n\\n";
+  let totalKgLiquido = 0;
+  let csv = "\uFEFFParcela;Data;Hora;Matrícula;Tipo de maçã;Tipo de palote;N.º palotes;Kg bruto;Tara camião;Tara palotes;Kg líquido maçã\n";
 
-  dados.forEach(function(r, indice) {
-    totalKg += Number(r.liquido) || 0;
-
-    csv += "CARGA " + (dados.length - indice) + "\\n";
-    csv += "Parcela;Data;Hora;Matrícula;Tipo de maçã;Tipo de palote;N.º palotes;Kg bruto;Tara camião;Tara palotes;Kg líquido maçã\\n";
+  dados.forEach(function(r) {
+    totalKgLiquido += Number(r.liquido) || 0;
 
     const linha = [
       r.parcela,
@@ -409,15 +405,14 @@ function exportar() {
 
     csv += linha.map(function(x) {
       return '"' + String(x).replace(/"/g, '""') + '"';
-    }).join(";") + "\\n\\n";
+    }).join(";") + "\n";
   });
 
-  csv += "========================================\\n";
-  csv += "TOTAL KG LÍQUIDOS DE MAÇÃ;" +
-    totalKg.toLocaleString("pt-PT", {
+  csv += "\nTOTAL KG LÍQUIDOS DE MAÇÃ;" +
+    totalKgLiquido.toLocaleString("pt-PT", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
-    }) + " kg\\n";
+    }) + " kg\n";
 
   const blob = new Blob([csv], {type: "text/csv;charset=utf-8"});
   const url = URL.createObjectURL(blob);

@@ -1,0 +1,86 @@
+<!doctype html><html lang="pt-PT"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><title>Registo de Cargas</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f2f4f7;color:#172033;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}main{max-width:700px;margin:auto;padding:18px}.card{background:#fff;border-radius:18px;padding:18px;margin-bottom:15px;box-shadow:0 2px 12px #0001}h1{font-size:27px;margin:4px 0}.sub{color:#667085;margin:0 0 18px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.full{grid-column:1/-1}.field{margin-bottom:13px}label{display:block;font-weight:700;font-size:14px;margin-bottom:7px}input,select{width:100%;height:49px;border:1px solid #d0d5dd;border-radius:12px;padding:0 13px;font-size:17px;background:#fff}.result{background:#edf7ee;border-radius:12px;min-height:49px;padding:12px;font-size:18px}.result b{font-size:22px}button{border:0;border-radius:12px;min-height:48px;padding:0 16px;font-size:16px;font-weight:700}.primary{background:#1677d2;color:#fff;width:100%}.secondary{background:#e9edf2;color:#172033}.danger{background:#fee4e2;color:#b42318}.row{display:flex;gap:9px;margin-top:10px}.row button{flex:1}.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}.stat{background:#f7f8fa;border-radius:12px;padding:12px}.stat small{color:#667085}.stat b{display:block;font-size:19px;margin-top:3px}.scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:1100px}th,td{padding:9px 7px;border-bottom:1px solid #eaecf0;text-align:left;font-size:13px}th{background:#f8fafc}.empty{text-align:center;color:#667085;padding:18px}@media(max-width:520px){.grid{display:block}.stats{grid-template-columns:1fr 1fr}.stats .stat:last-child{grid-column:1/-1}}
+</style></head><body><main>
+<section class="card"><div style="text-align:center;font-weight:800;font-size:20px;letter-spacing:.3px;margin-bottom:5px">Branquinho &amp; Mesquita</div><h1>🍎 Registo de Cargas</h1><p class="sub">Registo de palotes, kg, tara, maçã e tipo de palote.</p>
+<div class="grid">
+<div class="field full"><label>Nome da parcela</label><input id="parcela" placeholder="Ex.: Parcela 12"></div>
+<div class="field"><label>Data</label><input id="data" type="date"></div>
+<input id="hora" type="hidden">
+<div class="field"><label>Matrícula do camião</label><select id="matricula"><option value="">Selecionar matrícula</option><option>04-92-IR</option><option>QQ-75-72</option><option>Outra matrícula</option></select></div>
+<div class="field"><label>Tipo de maçã</label><select id="maca"><option value="">Selecionar tipo</option><option>Gala</option><option>Golden</option><option>Starking</option><option>Reineta</option><option>Jeromine</option><option>Bravo</option><option>Fuji</option><option>Golden suprema</option><option>Jonagored</option><option>Industria</option></select></div>
+<div class="field"><label>Tipo de palote</label><select id="tipoPalote"><option value="">Selecionar tipo</option><option>Plástico 1x1,20</option><option>Plástico 1,20x1,20</option><option>Madeira 1x1,20</option><option>Madeira 1,20x1,20</option></select><small id="taraPaloteInfo" style="display:block;color:#667085;margin-top:5px"></small></div>
+<div class="field"><label>N.º de palotes</label><input id="palotes" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div>
+<div class="field"><label>Kg bruto</label><input id="bruto" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0"></div>
+<div class="field"><label>Tara do camião (kg)</label><input id="tara" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0"></div>
+<div class="field"><label>Kg líquido</label><div class="result"><b id="liquido">0,00 kg</b></div></div>
+</div><button type="button" class="primary" onclick="guardarRegisto()">➕ GUARDAR REGISTO</button>
+<div class="row"><button class="secondary" onclick="novoRegisto()">Novo registo</button><button class="danger" onclick="apagarTudo()">Apagar tudo</button></div></section>
+<section class="card"><div class="stats"><div class="stat"><small>Registos</small><b id="totalReg">0</b></div><div class="stat"><small>Total palotes</small><b id="totalPal">0</b></div><div class="stat"><small>Total kg líquidos</small><b id="totalKg">0,00</b></div></div></section>
+<section class="card"><h2 style="font-size:20px;margin-top:0">📋 Histórico</h2><div id="estado" style="display:none;background:#edf7ee;padding:10px;border-radius:10px;margin-bottom:12px;font-weight:700"></div><div class="scroll"><table><thead><tr><th>Parcela</th><th>Data</th><th>Hora</th><th>Matrícula</th><th>Maçã</th><th>Palote</th><th>Palotes</th><th>Bruto</th><th>Tara camião</th><th>Tara palotes</th><th>Líquido maçã</th><th></th></tr></thead><tbody id="lista"></tbody></table></div><div id="vazio" class="empty">Ainda não há registos.</div><div class="row"><button class="primary" onclick="exportar()">⬇️ Exportar CSV</button></div></section>
+</main><script>
+const KEY="registo_cargas_maca_v1";
+const TARA_PALETES={
+ "Plástico 1x1,20":40,
+ "Plástico 1,20x1,20":40,
+ "Madeira 1x1,20":0,
+ "Madeira 1,20x1,20":0
+};
+let dados=[];try{dados=JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){dados=[]}
+const $=id=>document.getElementById(id);function hoje(){const d=new Date(),m=String(d.getMonth()+1).padStart(2,"0"),dia=String(d.getDate()).padStart(2,"0");$("data").value=d.getFullYear()+"-"+m+"-"+dia}
+function horaAtual(){const d=new Date();$("hora").value=String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")}function num(id){return parseFloat($(id).value)||0}function fmt(n){return Number(n).toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2})}function calcular(){const bruto=num("bruto"),tara=num("tara"),palotes=Math.floor(num("palotes")),taraPalote=TARA_PALETES[$("tipoPalote").value]||0;const total=bruto-tara-palotes*taraPalote;$("liquido").textContent=fmt(total)+" kg";if($("taraPaloteInfo"))$("taraPaloteInfo").textContent=taraPalote>0?("Tara deste palote: "+fmt(taraPalote)+" kg | Total: "+fmt(palotes*taraPalote)+" kg"):"";}
+ const bruto=num("bruto"),tara=num("tara"),palotes=Math.floor(num("palotes"));
+ const taraPalote=TARA_PALETES[$("tipoPalote").value]||0;
+ const taraTotalPalotes=palotes*taraPalote;
+ const liquido=bruto-tara-taraTotalPalotes;
+ $("liquido").textContent=fmt(liquido)+" kg";
+ $("taraPaloteInfo").textContent=taraPalote>0?("Tara deste palote: "+fmt(taraPalote)+" kg | Total palotes: "+fmt(taraTotalPalotes)+" kg"):"Tara do palote: definir no código";
+}$("bruto").oninput=calcular;$("tara").oninput=calcular;$("palotes").oninput=calcular;$("tipoPalote").onchange=calcular;
+$("matricula").onchange=function(){if(this.value==="Outra matrícula"){const x=prompt("Introduza a matrícula:");if(x&&x.trim()){const v=x.trim().toUpperCase(),o=document.createElement("option");o.value=v;o.textContent=v;this.insertBefore(o,this.lastElementChild);this.value=v}else this.value=""}};
+function guardar(){localStorage.setItem(KEY,JSON.stringify(dados))}
+function guardarRegisto(){
+ const parcela=$("parcela").value.trim();
+ const matricula=$("matricula").value;
+ const maca=$("maca").value;
+ const tipoPalote=$("tipoPalote").value;
+ const bruto=num("bruto");
+ const tara=num("tara");
+ const palotes=Math.floor(num("palotes"));
+ if(!parcela){alert("Indique o nome da parcela.");return}
+ if(!matricula){alert("Selecione a matrícula.");return}
+ if(!maca){alert("Selecione o tipo de maçã.");return}
+ if(!tipoPalote){alert("Selecione o tipo de palote.");return}
+ if(palotes<0||bruto<0||tara<0){alert("Os valores não podem ser negativos.");return}
+ if(bruto<tara){alert("O kg bruto não pode ser inferior à tara.");return}
+ const agora=new Date();
+ const hora=String(agora.getHours()).padStart(2,"0")+":"+String(agora.getMinutes()).padStart(2,"0")+":"+String(agora.getSeconds()).padStart(2,"0");
+ const taraPalote=TARA_PALETES[tipoPalote]||0;
+ const taraTotalPalotes=palotes*taraPalote;
+ const liquido=bruto-tara-taraTotalPalotes;
+ if(liquido<0){alert("O peso líquido não pode ser negativo. Verifique os pesos.");return}
+ dados.unshift({id:Date.now(),parcela,data:$("data").value,hora,matricula,maca,tipoPalote,palotes,bruto,tara,taraPalote,taraTotalPalotes,liquido});
+ try {
+   localStorage.setItem(KEY, JSON.stringify(dados));
+   const confirmacao = JSON.parse(localStorage.getItem(KEY) || "[]");
+   if (!confirmacao.length) throw new Error("save_failed");
+ } catch(e) {
+   alert("Não foi possível guardar no iPhone. Abra a aplicação no Safari e tente novamente.");
+   return;
+ }
+ mostrar();
+ $("estado").textContent="✅ Último registo guardado às "+hora;
+ $("estado").style.display="block";
+ alert("✅ Registo guardado com sucesso.");
+ novoRegisto();
+}
+function novoRegisto(){$("parcela").value="";$("palotes").value="";$("bruto").value="";$("tara").value="";$("liquido").textContent="0,00 kg";$("maca").value="";$("tipoPalote").value="";$("matricula").value="";$("hora").value="";hoje()}
+function apagar(i){if(confirm("Apagar este registo?")){dados.splice(i,1);guardar();mostrar()}}function apagarTudo(){if(dados.length&&confirm("Apagar TODOS os registos?")){dados=[];guardar();mostrar()}}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function mostrar(){const l=$("lista");l.innerHTML="";let p=0,k=0;$("vazio").style.display=dados.length?"none":"block";dados.forEach((r,i)=>{p+=r.palotes;k+=r.liquido;const tr=document.createElement("tr");tr.innerHTML="<td>"+esc(r.parcela)+"</td><td>"+r.data+"</td><td>"+(r.hora||"-")+"</td><td>"+esc(r.matricula)+"</td><td>"+esc(r.maca)+"</td><td>"+esc(r.tipoPalote)+"</td><td>"+r.palotes+"</td><td>"+fmt(r.bruto)+"</td><td>"+fmt(r.tara)+"</td><td>"+fmt(r.taraTotalPalotes||0)+"</td><td><b>"+fmt(r.liquido)+"</b></td><td><button class='danger' onclick='apagar("+i+")'>Apagar</button></td>";l.appendChild(tr)});$("totalReg").textContent=dados.length;$("totalPal").textContent=p.toLocaleString("pt-PT");$("totalKg").textContent=fmt(k)}
+function exportar(){if(!dados.length)return alert("Não existem registos.");let c="﻿Parcela;Data;Matrícula;Tipo de maçã;Tipo de palote;N.º palotes;Kg bruto;Tara;Kg líquido
+";dados.forEach(r=>c+=[r.parcela,r.data,r.hora||"",r.matricula,r.maca,r.tipoPalote,r.palotes,r.bruto,r.tara,r.taraTotalPalotes||0,r.liquido].map(x=>'"'+String(x).replaceAll('"','""')+'"').join(";")+"
+");const u=URL.createObjectURL(new Blob([c],{type:"text/csv;charset=utf-8"})),a=document.createElement("a");a.href=u;a.download="registo_cargas_maca.csv";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u)}
+hoje();mostrar();
+</script></body></html>

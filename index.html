@@ -383,9 +383,16 @@ function exportar() {
     return;
   }
 
-  let csv = "\uFEFFParcela;Data;Hora;Matrícula;Tipo de maçã;Tipo de palote;N.º palotes;Kg bruto;Tara camião;Tara palotes;Kg líquido maçã\n";
+  let totalKg = 0;
+  let csv = "\uFEFF";
+  csv += "REGISTO DE CARGAS - BRANQUINHO & MESQUITA\\n\\n";
 
-  dados.forEach(function(r) {
+  dados.forEach(function(r, indice) {
+    totalKg += Number(r.liquido) || 0;
+
+    csv += "CARGA " + (dados.length - indice) + "\\n";
+    csv += "Parcela;Data;Hora;Matrícula;Tipo de maçã;Tipo de palote;N.º palotes;Kg bruto;Tara camião;Tara palotes;Kg líquido maçã\\n";
+
     const linha = [
       r.parcela,
       r.data,
@@ -402,8 +409,15 @@ function exportar() {
 
     csv += linha.map(function(x) {
       return '"' + String(x).replace(/"/g, '""') + '"';
-    }).join(";") + "\n";
+    }).join(";") + "\\n\\n";
   });
+
+  csv += "========================================\\n";
+  csv += "TOTAL KG LÍQUIDOS DE MAÇÃ;" +
+    totalKg.toLocaleString("pt-PT", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }) + " kg\\n";
 
   const blob = new Blob([csv], {type: "text/csv;charset=utf-8"});
   const url = URL.createObjectURL(blob);
@@ -415,7 +429,6 @@ function exportar() {
   a.remove();
   URL.revokeObjectURL(url);
 }
-
 $("bruto").addEventListener("input", calcular);
 $("tara").addEventListener("input", calcular);
 $("palotes").addEventListener("input", calcular);

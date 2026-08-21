@@ -91,20 +91,37 @@ th{background:#f8fafc}
 </div>
 
 <div class="field">
-<label>Tipo de palote</label>
-<select id="tipoPalote">
+<label>Tipo de palote 1</label>
+<select id="tipoPalote1">
 <option value="">Selecionar tipo</option>
 <option>Plástico 1x1,20</option>
 <option>Plástico 1,20x1,20</option>
 <option>Madeira 1x1,20</option>
 <option>Madeira 1,20x1,20</option>
 </select>
-<small class="info" id="taraPaloteInfo"></small>
+<small class="info" id="taraPaloteInfo1"></small>
 </div>
 
 <div class="field">
-<label>N.º de palotes</label>
-<input id="palotes" type="number" min="0" step="1" inputmode="numeric" placeholder="0">
+<label>N.º de palotes 1</label>
+<input id="palotes1" type="number" min="0" step="1" inputmode="numeric" placeholder="0">
+</div>
+
+<div class="field">
+<label>Tipo de palote 2 (opcional)</label>
+<select id="tipoPalote2">
+<option value="">Sem segundo tipo</option>
+<option>Plástico 1x1,20</option>
+<option>Plástico 1,20x1,20</option>
+<option>Madeira 1x1,20</option>
+<option>Madeira 1,20x1,20</option>
+</select>
+<small class="info" id="taraPaloteInfo2"></small>
+</div>
+
+<div class="field">
+<label>N.º de palotes 2</label>
+<input id="palotes2" type="number" min="0" step="1" inputmode="numeric" placeholder="0">
 </div>
 
 <div class="field">
@@ -133,7 +150,7 @@ th{background:#f8fafc}
 <section class="card">
 <div class="stats">
 <div class="stat"><small>Registos</small><b id="totalReg">0</b></div>
-<div class="stat"><small>Total palotes</small><b id="totalPal">0</b></div>
+<div class="stat"><small>Total palotes (2 tipos)</small><b id="totalPal">0</b></div>
 <div class="stat"><small>Total kg líquidos</small><b id="totalKg">0,00</b></div>
 </div>
 </section>
@@ -146,7 +163,7 @@ th{background:#f8fafc}
 <thead>
 <tr>
 <th>Parcela</th><th>Data</th><th>Hora</th><th>Matrícula</th><th>Maçã</th>
-<th>Palote</th><th>Palotes</th><th>Bruto</th><th>Tara camião</th>
+<th>Palote 1</th><th>N.º 1</th><th>Palote 2</th><th>N.º 2</th><th>Bruto</th><th>Tara camião</th>
 <th>Tara palotes</th><th>Líquido maçã</th><th></th>
 </tr>
 </thead>
@@ -202,23 +219,24 @@ function fmt(n) {
 function calcular() {
   const bruto = numero("bruto");
   const taraCamiao = numero("tara");
-  const palotes = Math.floor(numero("palotes"));
-  const taraPalote = TARA_PALETES[$("tipoPalote").value] || 0;
-  const taraTotalPalotes = palotes * taraPalote;
+  const palotes1 = Math.floor(numero("palotes1"));
+  const palotes2 = Math.floor(numero("palotes2"));
+  const tipo1 = $("tipoPalote1").value;
+  const tipo2 = $("tipoPalote2").value;
+  const tara1 = TARA_PALETES[tipo1] || 0;
+  const tara2 = TARA_PALETES[tipo2] || 0;
+  const taraTotalPalotes = (palotes1 * tara1) + (palotes2 * tara2);
   const liquido = bruto - taraCamiao - taraTotalPalotes;
 
   $("liquido").textContent = fmt(liquido) + " kg";
 
-  if (taraPalote > 0) {
-    $("taraPaloteInfo").textContent =
-      "Tara por palote: " + fmt(taraPalote) +
-      " kg | Tara total: " + fmt(taraTotalPalotes) + " kg";
-  } else if ($("tipoPalote").value) {
-    $("taraPaloteInfo").textContent =
-      "Tara deste tipo ainda está a 0 kg — pode ser alterada no código.";
-  } else {
-    $("taraPaloteInfo").textContent = "";
-  }
+  $("taraPaloteInfo1").textContent = tipo1
+    ? "Tara: " + fmt(tara1) + " kg | Total: " + fmt(palotes1 * tara1) + " kg"
+    : "";
+
+  $("taraPaloteInfo2").textContent = tipo2
+    ? "Tara: " + fmt(tara2) + " kg | Total: " + fmt(palotes2 * tara2) + " kg"
+    : "";
 }
 
 function guardarDados() {
@@ -233,14 +251,17 @@ function guardarDados() {
 
 function novaEntrada() {
   $("parcela").value = "";
-  $("palotes").value = "";
+  $("palotes1").value = "";
+  $("palotes2").value = "";
   $("bruto").value = "";
   $("tara").value = "";
   $("maca").value = "";
-  $("tipoPalote").value = "";
+  $("tipoPalote1").value = "";
+  $("tipoPalote2").value = "";
   $("matricula").value = "";
   $("liquido").textContent = "0,00 kg";
-  $("taraPaloteInfo").textContent = "";
+  $("taraPaloteInfo1").textContent = "";
+  $("taraPaloteInfo2").textContent = "";
   hoje();
 }
 
@@ -248,17 +269,38 @@ function guardarRegisto() {
   const parcela = $("parcela").value.trim();
   const matricula = $("matricula").value;
   const maca = $("maca").value;
-  const tipoPalote = $("tipoPalote").value;
-  const palotes = Math.floor(numero("palotes"));
+  const tipoPalote1 = $("tipoPalote1").value;
+  const tipoPalote2 = $("tipoPalote2").value;
+  const palotes1 = Math.floor(numero("palotes1"));
+  const palotes2 = Math.floor(numero("palotes2"));
   const bruto = numero("bruto");
   const taraCamiao = numero("tara");
 
   if (!parcela) { alert("Indique o nome da parcela."); return; }
   if (!matricula) { alert("Selecione a matrícula."); return; }
   if (!maca) { alert("Selecione o tipo de maçã."); return; }
-  if (!tipoPalote) { alert("Selecione o tipo de palote."); return; }
-  if (palotes < 0 || bruto < 0 || taraCamiao < 0) {
+  if (!tipoPalote1 && !tipoPalote2) {
+    alert("Selecione pelo menos um tipo de palote.");
+    return;
+  }
+  if (tipoPalote2 && tipoPalote2 === tipoPalote1) {
+    alert("Os dois tipos de palote têm de ser diferentes.");
+    return;
+  }
+  if (tipoPalote2 && palotes2 === 0) {
+    alert("Indique o número de palotes do segundo tipo ou retire o segundo tipo.");
+    return;
+  }
+  if (!tipoPalote2 && palotes2 > 0) {
+    alert("Selecione o segundo tipo de palote.");
+    return;
+  }
+  if (palotes1 < 0 || palotes2 < 0 || bruto < 0 || taraCamiao < 0) {
     alert("Os valores não podem ser negativos.");
+    return;
+  }
+  if (!tipoPalote1 && palotes1 > 0) {
+    alert("Selecione o tipo de palote 1.");
     return;
   }
   if (bruto < taraCamiao) {
@@ -272,8 +314,10 @@ function guardarRegisto() {
     String(agora.getMinutes()).padStart(2, "0") + ":" +
     String(agora.getSeconds()).padStart(2, "0");
 
-  const taraPalote = TARA_PALETES[tipoPalote] || 0;
-  const taraTotalPalotes = palotes * taraPalote;
+  const taraPalote1 = TARA_PALETES[tipoPalote1] || 0;
+  const taraPalote2 = TARA_PALETES[tipoPalote2] || 0;
+  const taraTotalPalotes =
+    (palotes1 * taraPalote1) + (palotes2 * taraPalote2);
   const liquido = bruto - taraCamiao - taraTotalPalotes;
 
   if (liquido < 0) {
@@ -288,11 +332,14 @@ function guardarRegisto() {
     hora: hora,
     matricula: matricula,
     maca: maca,
-    tipoPalote: tipoPalote,
-    palotes: palotes,
+    tipoPalote1: tipoPalote1,
+    palotes1: palotes1,
+    taraPalote1: taraPalote1,
+    tipoPalote2: tipoPalote2,
+    palotes2: palotes2,
+    taraPalote2: taraPalote2,
     bruto: bruto,
     taraCamiao: taraCamiao,
-    taraPalote: taraPalote,
     taraTotalPalotes: taraTotalPalotes,
     liquido: liquido
   };
@@ -351,7 +398,9 @@ function mostrar() {
   $("vazio").style.display = dados.length ? "none" : "block";
 
   dados.forEach(function(r, i) {
-    totalPalotes += Number(r.palotes) || 0;
+    const p1 = Number(r.palotes1 ?? r.palotes ?? 0);
+    const p2 = Number(r.palotes2 ?? 0);
+    totalPalotes += p1 + p2;
     totalKg += Number(r.liquido) || 0;
 
     const tr = document.createElement("tr");
@@ -361,8 +410,10 @@ function mostrar() {
       "<td>" + escapar(r.hora || "-") + "</td>" +
       "<td>" + escapar(r.matricula) + "</td>" +
       "<td>" + escapar(r.maca) + "</td>" +
-      "<td>" + escapar(r.tipoPalote) + "</td>" +
-      "<td>" + r.palotes + "</td>" +
+      "<td>" + escapar(r.tipoPalote1 || r.tipoPalote || "") + "</td>" +
+      "<td>" + p1 + "</td>" +
+      "<td>" + escapar(r.tipoPalote2 || "") + "</td>" +
+      "<td>" + p2 + "</td>" +
       "<td>" + fmt(r.bruto) + "</td>" +
       "<td>" + fmt(r.taraCamiao ?? r.tara ?? 0) + "</td>" +
       "<td>" + fmt(r.taraTotalPalotes || 0) + "</td>" +
@@ -384,13 +435,19 @@ function exportar() {
   }
 
   let totalGeral = 0;
+  let totalIndustria = 0;
   const totaisMaca = {};
 
   dados.forEach(function(r) {
     const kg = Number(r.liquido) || 0;
-    totalGeral += kg;
     const maca = r.maca || "Sem tipo de maçã";
-    totaisMaca[maca] = (totaisMaca[maca] || 0) + kg;
+
+    if (maca === "Industria") {
+      totalIndustria += kg;
+    } else {
+      totalGeral += kg;
+      totaisMaca[maca] = (totaisMaca[maca] || 0) + kg;
+    }
   });
 
   function esc(v) {
@@ -410,8 +467,10 @@ function exportar() {
           <th>Hora</th>
           <th>Matrícula</th>
           <th>Tipo de maçã</th>
-          <th>Tipo de palote</th>
-          <th>N.º palotes</th>
+          <th>Tipo de palote 1</th>
+          <th>N.º palotes 1</th>
+          <th>Tipo de palote 2</th>
+          <th>N.º palotes 2</th>
           <th>Kg bruto</th>
           <th>Tara camião</th>
           <th>Tara palotes</th>
@@ -421,14 +480,19 @@ function exportar() {
       <tbody>`;
 
   dados.forEach(function(r) {
+    const p1 = Number(r.palotes1 ?? r.palotes ?? 0);
+    const p2 = Number(r.palotes2 ?? 0);
+
     tabela += `<tr>
       <td>${esc(r.parcela)}</td>
       <td>${esc(r.data)}</td>
       <td>${esc(r.hora || "")}</td>
       <td>${esc(r.matricula)}</td>
       <td>${esc(r.maca)}</td>
-      <td>${esc(r.tipoPalote)}</td>
-      <td>${esc(r.palotes)}</td>
+      <td>${esc(r.tipoPalote1 || r.tipoPalote || "")}</td>
+      <td>${p1}</td>
+      <td>${esc(r.tipoPalote2 || "")}</td>
+      <td>${p2}</td>
       <td>${esc(r.bruto)}</td>
       <td>${esc(r.taraCamiao ?? r.tara ?? 0)}</td>
       <td>${esc(r.taraTotalPalotes || 0)}</td>
@@ -456,13 +520,25 @@ function exportar() {
 
   resumo += `
       <div class="total-geral">
-        <strong>TOTAL GERAL KG LÍQUIDOS DE MAÇÃ</strong><br>
+        <strong>TOTAL GERAL KG LÍQUIDOS DE MAÇÃ (SEM INDUSTRIA)</strong><br>
         <span>${totalGeral.toLocaleString("pt-PT", {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2
         })} kg</span>
-      </div>
-    </section>`;
+      </div>`;
+
+  if (totalIndustria > 0) {
+    resumo += `
+      <div class="total-industria">
+        <strong>TOTAL KG LÍQUIDOS DE INDUSTRIA</strong><br>
+        <span>${totalIndustria.toLocaleString("pt-PT", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        })} kg</span>
+      </div>`;
+  }
+
+  resumo += `</section>`;
 
   const documento = `<!doctype html>
 <html lang="pt-PT">
@@ -478,8 +554,11 @@ function exportar() {
   .resumo { margin-top: 28px; page-break-inside: avoid; }
   .resumo h2 { font-size: 17px; margin-bottom: 12px; }
   .resumo p { margin: 7px 0; font-size: 14px; }
-  .total-geral { margin-top: 20px; padding-top: 12px; border-top: 2px solid #111; font-size: 16px; }
-  .total-geral span { font-size: 18px; }
+  .total-geral, .total-industria {
+    margin-top: 20px; padding-top: 12px; border-top: 2px solid #111; font-size: 16px;
+  }
+  .total-geral span, .total-industria span { font-size: 18px; }
+  .total-industria { border-top: 2px solid #555; }
 </style>
 </head>
 <body>
@@ -499,10 +578,13 @@ ${resumo}
   a.remove();
   URL.revokeObjectURL(url);
 }
+
 $("bruto").addEventListener("input", calcular);
 $("tara").addEventListener("input", calcular);
-$("palotes").addEventListener("input", calcular);
-$("tipoPalote").addEventListener("change", calcular);
+$("palotes1").addEventListener("input", calcular);
+$("palotes2").addEventListener("input", calcular);
+$("tipoPalote1").addEventListener("change", calcular);
+$("tipoPalote2").addEventListener("change", calcular);
 
 $("matricula").addEventListener("change", function() {
   if (this.value !== "OUTRA") return;
